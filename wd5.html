@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkyZen Weather</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(to top, #a18cd1 0%, #fbc2eb 100%); /* Soft gradient background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .weather-container {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .weather-header {
+            margin-bottom: 30px;
+        }
+
+        .weather-header h1 {
+            font-size: 2.5rem;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .weather-header p {
+            font-size: 1rem;
+            color: #777;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .search-box input {
+            flex-grow: 1;
+            padding: 12px 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .search-box button {
+            padding: 12px 20px;
+            background-color: #6495ED; /* Cornflower Blue */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .search-box button:hover {
+            background-color: #4682B4; /* Steel Blue */
+        }
+
+        .weather-data {
+            text-align: left;
+        }
+
+        .weather-data h2 {
+            font-size: 2rem;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .weather-data h2 img {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+        }
+
+        .weather-data p {
+            font-size: 1.1rem;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .details {
+            margin-top: 25px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+        }
+
+        .details-item {
+            background-color: rgba(255, 255, 255, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .details-item h3 {
+            font-size: 1.2rem;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .details-item p {
+            font-size: 1rem;
+            color: #777;
+        }
+
+        .error-message {
+            color: red;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="weather-container">
+        <div class="weather-header">
+            <h1>SkyZen Weather</h1>
+            <p>Get real-time weather updates</p>
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="cityInput" placeholder="Enter city name">
+            <button onclick="getWeather()">Check Weather</button>
+        </div>
+
+        <div class="weather-data" id="weatherData" style="display: none;">
+            <h2><img id="weatherIcon" src="" alt="Weather Icon"> <span id="location"></span></h2>
+            <p><span class="label">Temperature:</span> <span id="temperature"></span> °C</p>
+            <p><span class="label">Condition:</span> <span id="condition"></span></p>
+            <p><span class="label">Humidity:</span> <span id="humidity"></span>%</p>
+            <p><span class="label">Wind Speed:</span> <span id="windSpeed"></span> m/s</p>
+
+            <div class="details">
+                <div class="details-item">
+                    <h3>Sunrise</h3>
+                    <p id="sunrise"></p>
+                </div>
+                <div class="details-item">
+                    <h3>Sunset</h3>
+                    <p id="sunset"></p>
+                </div>
+                <div class="details-item">
+                    <h3>Feels Like</h3>
+                    <p><span id="feelsLike"></span> °C</p>
+                </div>
+                <div class="details-item">
+                    <h3>Pressure</h3>
+                    <p><span id="pressure"></span> hPa</p>
+                </div>
+            </div>
+        </div>
+
+        <p class="error-message" id="errorMessage" style="display: none;">Could not fetch weather data. Please try again.</p>
+        <p class="api-key-message" id="apiKeyMessage" style="color: orange; margin-top: 20px; display: none;">Remember to replace 'YOUR_API_KEY' in the JavaScript code with your actual OpenWeatherMap API key for this app to work correctly.</p>
+    </div>
+
+    <script>
+        const apiKey = '2318b9b61c5966b3d8e123368c212a2d'; // Your provided API key
+        const weatherDataDiv = document.getElementById('weatherData');
+        const errorMessageDiv = document.getElementById('errorMessage');
+        const locationElement = document.getElementById('location');
+        const temperatureElement = document.getElementById('temperature');
+        const conditionElement = document.getElementById('condition');
+        const humidityElement = document.getElementById('humidity');
+        const windSpeedElement = document.getElementById('windSpeed');
+        const sunriseElement = document.getElementById('sunrise');
+        const sunsetElement = document.getElementById('sunset');
+        const feelsLikeElement = document.getElementById('feelsLike');
+        const pressureElement = document.getElementById('pressure');
+        const weatherIconElement = document.getElementById('weatherIcon');
+        const apiKeyMessageDiv = document.getElementById('apiKeyMessage');
+
+        function getWeather() {
+            const city = document.getElementById('cityInput').value.trim();
+            if (!city) {
+                alert('Please enter a city name.');
+                return;
+            }
+
+            const apiUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
+
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.cod === 200) {
+                        const sunriseTime = new Date(data.sys.sunrise * 1000).toLocaleTimeString();
+                        const sunsetTime = new Date(data.sys.sunset * 1000).toLocaleTimeString();
+                        const weatherIconCode = data.weather[0].icon;
+                        const weatherIconUrl = `https://openweathermap.org/img/wn/${weatherIconCode}@2x.png`;
+
+                        locationElement.textContent = `${data.name}, ${data.sys.country}`;
+                        temperatureElement.textContent = Math.round(data.main.temp);
+                        conditionElement.textContent = data.weather[0].description;
+                        humidityElement.textContent = data.main.humidity;
+                        windSpeedElement.textContent = data.wind.speed;
+                        sunriseElement.textContent = sunriseTime;
+                        sunsetElement.textContent = sunsetTime;
+                        feelsLikeElement.textContent = Math.round(data.main.feels_like);
+                        pressureElement.textContent = data.main.pressure;
+                        weatherIconElement.src = weatherIconUrl;
+                        weatherIconElement.alt = data.weather[0].description;
+
+                        weatherDataDiv.style.display = 'block';
+                        errorMessageDiv.style.display = 'none';
+                        apiKeyMessageDiv.style.display = 'none'; // Hide the API key message
+                    } else {
+                        errorMessageDiv.style.display = 'block';
+                        weatherDataDiv.style.display = 'none';
+                        apiKeyMessageDiv.style.display = 'none'; // Hide the API key message
+                        errorMessageDiv.textContent = data.message || 'Could not fetch weather data. Please try again.';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching weather data:', error);
+                    errorMessageDiv.style.display = 'block';
+                    weatherDataDiv.style.display = 'none';
+                    apiKeyMessageDiv.style.display = 'none'; // Hide the API key message
+                    errorMessageDiv.textContent = 'Could not fetch weather data. Please check your API key and try again.';
+                });
+        }
+    </script>
+
+</body>
+</html>
